@@ -1,0 +1,98 @@
+#!/usr/bin/python
+
+#import modules
+import sys
+import os
+
+#define variables
+jsonfile = "/etc/onlyoffice/documentserver/default.json"
+rules = "\"rules\":"
+invalid = "invalid arguments. Use parameter 'help' to display help"
+idx = 0
+
+#functions
+def check_domain(domain):
+	global domain_exist
+	with open(jsonfile, "r") as in_file:
+        	if domain in in_file.read():
+			domain_exist = "1"
+		else:
+			domain_exist = "0"
+
+#main
+if len(sys.argv) == 3:
+	action = sys.argv[1]
+	domain = sys.argv[2]
+	domain_json = "                                {\n                                        \"address\": \"" + domain + "\",\n                                        \"allowed\": true\n                                },\n"
+	#add parameter
+	if action == "add" or action == "new":
+        	check_domain(domain)
+		if domain_exist == "0":
+			with open(jsonfile, "r") as in_file:
+                		buf = in_file.readlines()
+       			with open(jsonfile, "w") as out_file:
+                		for line in buf:
+                        		if rules in line:
+	                                	line = line + domain_json
+                        		out_file.write(line)
+        		os.system("supervisorctl restart all")
+		else:
+			print domain,"already exists"
+	#del parameter
+	elif action == "remove" or action == "rem" or action == "delete" or action == "del":
+        	check_domain(domain)
+		if domain_exist == "1":
+			with open(jsonfile, "r") as in_file:
+                		buf = in_file.readlines()       
+                		for line in buf:        
+                        		if domain in line:
+                                		idx0 = idx - 1
+                                		idx1 = idx
+                                		idx2 = idx + 1
+                                		idx3 = idx + 2
+                        		idx = idx + 1
+        		with open(jsonfile, "w") as out_file:
+                		idx = 0
+                		for line in buf:
+                        		if idx == idx0 or idx == idx1 or idx == idx2 or idx == idx3:
+                                		print("")
+                        		else:
+                                		out_file.write(line)
+                        		idx = idx + 1
+        		os.system("supervisorctl restart all")
+		else:
+			print "could not delete",domain,"because it didnt exist"
+	#check parameter
+	elif action == "check":
+		check_domain(domain)
+		if domain_exist == "1":
+			print domain,"successfully found in the list"
+		else:
+			print domain,"could NOT be found in the list"
+	else:
+		print(invalid)
+elif len(sys.argv) == 2:
+	action = sys.argv[1]
+	#help parameter
+	if action == "help":
+		print ("")
+		print ("### domedit help")
+		print ("See the possible arguments listed below.")
+		print ("")
+		print ("add [domain]	add a domain to the list.")
+		print ("		example: domedit add cloud.example.ch")
+		print ("")
+		print ("del [domain]	remove a domain from the list")
+		print ("		example: domedit del cloud.example.ch")
+		print ("")
+		print ("check [domain]	checks if a domain exists on the list")
+		print ("		example: domedit check cloud.example.ch")
+		print ("")
+		print ("help		displays this help")
+		print ("")
+	else:
+		print(invalid)
+else:
+	print(invalid)
+
+
